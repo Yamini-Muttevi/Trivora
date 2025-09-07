@@ -6,7 +6,7 @@ from mapper import map_content_to_template
 # -----------------------------
 # Page Config
 # -----------------------------
-st.set_page_config(page_title="Trivora", layout="wide", page_icon="C:/Users/ymu/Downloads/trivora logo.png")
+st.set_page_config(page_title="Trivora", layout="wide", page_icon="trivora logo.png")
 
 # -----------------------------
 # Custom CSS
@@ -60,7 +60,7 @@ st.markdown("""
 # -----------------------------
 # Sidebar
 # -----------------------------
-st.sidebar.image("C:/Users/ymu/Downloads/trivora logo.png", width=200)  # Adjust width as needed
+st.sidebar.image("trivora logo.png", width=200)  # Adjust width as needed
  # ✅ use your uploaded logo
 st.sidebar.title("✨ Trivora")
 st.sidebar.markdown("**Scrape → Map → Download** your content into ready-to-use JSON.")
