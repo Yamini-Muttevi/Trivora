@@ -5,14 +5,12 @@ import cloudscraper
 
 def scrape_with_playwright(url: str):
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)  # ✅ bundled Chromium
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         page.goto(url, timeout=60000)
-
         html = page.content()
         soup = BeautifulSoup(html, "lxml")
         title = soup.title.string.strip() if soup.title else ""
-
         browser.close()
         return {"method": "playwright", "title": title, "html": html}
 
@@ -24,7 +22,9 @@ def scrape_with_requests(url: str):
     return {"method": "requests", "title": title, "html": resp.text}
 
 def scrape_with_cloudscraper(url: str):
-    scraper = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "mobile": False})
+    scraper = cloudscraper.create_scraper(
+        browser={"browser": "chrome", "platform": "windows", "mobile": False}
+    )
     resp = scraper.get(url, timeout=30)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "lxml")
@@ -43,8 +43,7 @@ def scrape_url(url: str):
             try:
                 return scrape_with_cloudscraper(url)
             except Exception as e3:
-                return {"error": f"All scraping methods failed", "details": [str(e1), str(e2), str(e3)]}
-
-if __name__ == "__main__":
-    result = scrape_url("https://example.com")
-    print(result)
+                return {
+                    "error": "All scraping methods failed",
+                    "details": [str(e1), str(e2), str(e3)],
+                }
