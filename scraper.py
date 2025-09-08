@@ -31,7 +31,9 @@ def parse_content(html, url):
     }
 
 def scrape_url(url: str):
-    # 1. Try Playwright (best for JS/Cloudflare)
+    e1 = e2 = e3 = None  # ✅ initialize error variables
+
+    # 1. Try Playwright
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -40,7 +42,8 @@ def scrape_url(url: str):
             html = page.content()
             browser.close()
             return {"method": "playwright", **parse_content(html, url)}
-    except Exception as e1:
+    except Exception as ex1:
+        e1 = ex1
         print(f"[WARN] Playwright failed: {e1}")
 
     # 2. Try requests
@@ -48,7 +51,8 @@ def scrape_url(url: str):
         resp = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
         return {"method": "requests", **parse_content(resp.text, url)}
-    except Exception as e2:
+    except Exception as ex2:
+        e2 = ex2
         print(f"[WARN] Requests failed: {e2}")
 
     # 3. Try cloudscraper
@@ -59,5 +63,12 @@ def scrape_url(url: str):
         resp = scraper.get(url, timeout=30)
         resp.raise_for_status()
         return {"method": "cloudscraper", **parse_content(resp.text, url)}
-    except Exception as e3:
-        return {"error": f"All scraping methods failed: {e1} | {e2} | {e3}"}
+    except Exception as ex3:
+        e3 = ex3
+        print(f"[WARN] Cloudscraper failed: {e3}")
+
+    # If all failed
+    return {
+        "error": "All scraping methods failed",
+        "details": [str(e1), str(e2), str(e3)]
+    }
