@@ -2,69 +2,49 @@ from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 
 
-def scrape_url(url: str):
+def scrape_url(url: str) -> dict:
+    """Scrape a URL using Playwright (headless Chromium) and return page info."""
     try:
         with sync_playwright() as p:
-            # Launch Chromium in headless mode
             browser = p.chromium.launch(headless=True)
-            context = browser.new_context()
-
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/139.0.0.0 Safari/537.36"
+                )
+            )
             page = context.new_page()
-            page.goto(url, timeout=60000)
 
-            # Wait until page is fully loaded
-            page.wait_for_load_state("networkidle")
+            # Go to page and wait until network is idle
+            page.goto(url, wait_until="networkidle")
 
-            # Extract raw HTML
-            html_content = page.content()
-            browser.close()
+            # Extract HTML
+            html = page.content()
 
             # Parse with BeautifulSoup
-            soup = BeautifulSoup(html_content, "lxml")
+            soup = BeautifulSoup(html, "lxml")
 
-            # --- Extract metadata ---
-            title = soup.title.string.strip() if soup.title else None
+            title = soup.title.string.strip() if soup.title else ""
+            meta_desc = ""
+            desc_tag = soup.find("meta", attrs={"name": "description"})
+            if desc_tag and desc_tag.get("content"):
+                meta_desc = desc_tag["content"]
 
-            # Publish date (often in <time> or a span with date class)
-            publish_date = None
-            time_tag = soup.find("time")
-            if time_tag:
-                publish_date = time_tag.get_text(strip=True)
-
-            # Tags (if present in meta or page body)
-            tags = []
-            tag_elements = soup.select(".tags a, .article-tags a, .meta-tags a")
-            if tag_elements:
-                tags = [t.get_text(strip=True) for t in tag_elements]
-
-            # Article body (main content area)
-            article_text = None
-            article = soup.find("main") or soup.find("article")
-            if article:
-                article_text = article.get_text(separator="\n", strip=True)
+            browser.close()
 
             return {
                 "url": url,
                 "title": title,
-                "publish_date": publish_date,
-                "tags": tags,
-                "text": article_text,
-                "html": html_content
+                "description": meta_desc,
+                "html": html[:1000]  # first 1000 chars only
             }
 
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Scraping failed: {e}"}
 
 
 if __name__ == "__main__":
-    url = "https://www.orica.com/news-media/2025/successful-completion-of-long-term-us-private-placement"
-    result = scrape_url(url)
-
-    if "error" in result:
-        print("❌ Error:", result["error"])
-    else:
-        print("✅ Title:", result["title"])
-        print("📅 Date:", result["publish_date"])
-        print("🏷 Tags:", result["tags"])
-        print("\n--- Article Preview ---\n")
-        print(result["text"][:1000])  # print first 1000 chars of text
+    test_url = "https://www.orica.com/news-media/2025/successful-completion-of-long-term-us-private-placement"
+    result = scrape_url(test_url)
+    print(result)
