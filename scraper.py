@@ -2,6 +2,11 @@ from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import requests
 import cloudscraper
+import subprocess
+try:
+    subprocess.run(["playwright", "install", "chromium"], check=True)
+except Exception as e:
+    print(f"[WARN] Failed to install chromium: {e}")
 
 
 def parse_content(html, url):
