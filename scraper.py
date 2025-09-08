@@ -1,41 +1,42 @@
-import os
-from pathlib import Path
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+import requests
 
-def find_chrome_path():
-    """Try to find Chrome executable on Windows."""
-    possible_paths = [
-        Path("C:/Program Files/Google/Chrome/Application/chrome.exe"),
-        Path("C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"),
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Google/Chrome/Application/chrome.exe",
-    ]
-    for path in possible_paths:
-        if path.exists():
-            return str(path)
-    raise FileNotFoundError("Google Chrome executable not found. Please install Chrome or update path.")
+def scrape_with_playwright(url: str):
+    """Try scraping with Playwright (bundled Chromium)."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)  # ✅ no executable_path
+        page = browser.new_page()
+        page.goto(url, timeout=60000)
+
+        html = page.content()
+        soup = BeautifulSoup(html, "lxml")
+
+        title = soup.title.string.strip() if soup.title else ""
+
+        browser.close()
+        return {"title": title, "html": html}
+
+def scrape_with_requests(url: str):
+    """Fallback: scrape with requests + BeautifulSoup (no JS)."""
+    resp = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    resp.raise_for_status()
+
+    soup = BeautifulSoup(resp.text, "lxml")
+    title = soup.title.string.strip() if soup.title else ""
+
+    return {"title": title, "html": resp.text}
 
 def scrape_url(url: str):
     try:
-        chrome_path = find_chrome_path()
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=True,
-                executable_path=chrome_path
-            )
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-
-            html = page.content()
-            soup = BeautifulSoup(html, "lxml")
-
-            title = soup.title.string.strip() if soup.title else ""
-
-            browser.close()
-            return {"title": title, "html": html}
-
-    except Exception as e:
-        return {"error": str(e)}
+        return scrape_with_playwright(url)
+    except Exception as e1:
+        print(f"[WARN] Playwright failed: {e1}")
+        try:
+            return scrape_with_requests(url)
+        except Exception as e2:
+            return {"error": f"Both Playwright and requests failed: {e1} | {e2}"}
 
 if __name__ == "__main__":
-    print(scrape_url("https://example.com"))
+    result = scrape_url("https://example.com")
+    print(result)
