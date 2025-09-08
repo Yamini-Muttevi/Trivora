@@ -1,6 +1,12 @@
 import asyncio
-import playwright
+import json
+import streamlit as st
+from scraper import scrape_url
+from mapper import map_content_to_template
 
+# -----------------------------
+# Bootstrap: Ensure Playwright Chromium
+# -----------------------------
 def ensure_playwright_browsers():
     """Install Chromium if missing (first-time cloud run)."""
     from playwright._impl._driver import get_driver
@@ -10,13 +16,7 @@ def ensure_playwright_browsers():
     except Exception as e:
         print(f"[WARN] Playwright install failed: {e}")
 
-# Run before using Playwright
 ensure_playwright_browsers()
-
-import streamlit as st
-import json
-from scraper import scrape_url
-from mapper import map_content_to_template
 
 # -----------------------------
 # Page Config
@@ -75,8 +75,7 @@ st.markdown("""
 # -----------------------------
 # Sidebar
 # -----------------------------
-st.sidebar.image("trivora logo.png", width=200)  # Adjust width as needed
- # ✅ use your uploaded logo
+st.sidebar.image("trivora logo.png", width=200)
 st.sidebar.title("✨ Trivora")
 st.sidebar.markdown("**Scrape → Map → Download** your content into ready-to-use JSON.")
 st.sidebar.markdown("---")
@@ -103,13 +102,20 @@ if st.button("🚀 Scrape URL", use_container_width=True, type="primary"):
             try:
                 scraped = scrape_url(url)
                 st.session_state["scraped"] = scraped
-                st.success("✅ Scraping completed!")
+                st.success(f"✅ Scraping completed using **{scraped.get('method', 'unknown')}**")
             except Exception as e:
                 st.error(f"❌ Scrape failed: {e}")
 
 if "scraped" in st.session_state:
     with st.expander("📑 View Scraped Metadata", expanded=False):
-        st.code(json.dumps(st.session_state["scraped"], indent=2), language="json")
+        meta_preview = {
+            "method": st.session_state["scraped"].get("method"),
+            "title": st.session_state["scraped"].get("title")
+        }
+        st.code(json.dumps(meta_preview, indent=2), language="json")
+
+    with st.expander("📝 View Full HTML (optional)", expanded=False):
+        st.text_area("HTML Content", st.session_state["scraped"].get("html", ""), height=300)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------
