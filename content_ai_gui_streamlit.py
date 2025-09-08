@@ -9,14 +9,14 @@ from mapper import map_content_to_template
 # -----------------------------
 def ensure_playwright_browsers():
     """Install Chromium if missing (first-time cloud run)."""
-    from playwright._impl._driver import get_driver
-    driver = get_driver()
     try:
-        asyncio.run(driver.install())
+        from playwright._impl.cli.install import install
+        asyncio.run(install(["chromium"]))
     except Exception as e:
-        print(f"[WARN] Playwright install failed: {e}")
+        print(f"[WARN] Playwright auto-install failed: {e}")
 
 ensure_playwright_browsers()
+
 
 # -----------------------------
 # Page Config
