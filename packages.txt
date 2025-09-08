@@ -1,11 +1,8 @@
-# packages.txt
 libnss3
-libnspr4
+libxss1
+libasound2
 libatk1.0-0
 libatk-bridge2.0-0
 libdrm2
-libxkbcommon0
+libgtk-3-0
 libgbm1
-libasound2
-libx11-xcb1
-libxcb1
