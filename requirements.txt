@@ -8,3 +8,6 @@ torch
 cloudscraper
 playwright
 chromium
+bs4
+lxml
+
