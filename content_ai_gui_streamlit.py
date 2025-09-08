@@ -1,3 +1,18 @@
+import asyncio
+import playwright
+
+def ensure_playwright_browsers():
+    """Install Chromium if missing (first-time cloud run)."""
+    from playwright._impl._driver import get_driver
+    driver = get_driver()
+    try:
+        asyncio.run(driver.install())
+    except Exception as e:
+        print(f"[WARN] Playwright install failed: {e}")
+
+# Run before using Playwright
+ensure_playwright_browsers()
+
 import streamlit as st
 import json
 from scraper import scrape_url
