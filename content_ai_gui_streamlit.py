@@ -4,6 +4,7 @@ import streamlit as st
 from scraper import scrape_url
 from mapper import map_content_to_template
 
+
 # -----------------------------
 # Bootstrap: Ensure Playwright Chromium
 # -----------------------------
@@ -15,18 +16,23 @@ def ensure_playwright_browsers():
     except Exception as e:
         print(f"[WARN] Playwright auto-install failed: {e}")
 
+
 ensure_playwright_browsers()
 
 
 # -----------------------------
 # Page Config
 # -----------------------------
-st.set_page_config(page_title="Trivora", layout="wide", page_icon="trivora logo.png")
+st.set_page_config(
+    page_title="Trivora", layout="wide", page_icon="trivora logo.png"
+)
+
 
 # -----------------------------
 # Custom CSS
 # -----------------------------
-st.markdown("""
+st.markdown(
+    """
     <style>
     .main-title {
         text-align: center;
@@ -70,29 +76,45 @@ st.markdown("""
         transform: scale(1.03);
     }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # -----------------------------
 # Sidebar
 # -----------------------------
 st.sidebar.image("trivora logo.png", width=200)
 st.sidebar.title("✨ Trivora")
-st.sidebar.markdown("**Scrape → Map → Download** your content into ready-to-use JSON.")
+st.sidebar.markdown(
+    "**Scrape → Map → Download** your content into ready-to-use JSON."
+)
 st.sidebar.markdown("---")
-st.sidebar.info("💡 Tip: Scrape an article → Map to 'News' → Download JSON")
+st.sidebar.info(
+    "💡 Tip: Scrape an article → Map to 'News' → Download JSON"
+)
+
 
 # -----------------------------
 # Header
 # -----------------------------
-st.markdown('<h1 class="main-title">Trivora</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Scrape. Map. Download.</p>', unsafe_allow_html=True)
+st.markdown(
+    '<h1 class="main-title">Trivora</h1>', unsafe_allow_html=True
+)
+st.markdown(
+    '<p class="subtitle">Scrape. Map. Download.</p>',
+    unsafe_allow_html=True,
+)
+
 
 # -----------------------------
 # Step 1: Scraping
 # -----------------------------
 st.markdown('<div class="step-card">', unsafe_allow_html=True)
 st.subheader("🔍 Step 1: Scrape Content")
-url = st.text_input("Enter a live URL to scrape", placeholder="https://example.com/article")
+url = st.text_input(
+    "Enter a live URL to scrape", placeholder="https://example.com/article"
+)
 
 if st.button("🚀 Scrape URL", use_container_width=True, type="primary"):
     if not url:
@@ -102,7 +124,9 @@ if st.button("🚀 Scrape URL", use_container_width=True, type="primary"):
             try:
                 scraped = scrape_url(url)
                 st.session_state["scraped"] = scraped
-                st.success(f"✅ Scraping completed using **{scraped.get('method', 'unknown')}**")
+                st.success(
+                    f"✅ Scraping completed using **{scraped.get('method', 'unknown')}**"
+                )
             except Exception as e:
                 st.error(f"❌ Scrape failed: {e}")
 
@@ -110,13 +134,28 @@ if "scraped" in st.session_state:
     with st.expander("📑 View Scraped Metadata", expanded=False):
         meta_preview = {
             "method": st.session_state["scraped"].get("method"),
-            "title": st.session_state["scraped"].get("title")
+            "title": st.session_state["scraped"].get("title"),
+            "description": st.session_state["scraped"].get("description"),
+            "headings_count": len(
+                st.session_state["scraped"].get("headings", [])
+            ),
+            "links_count": len(
+                st.session_state["scraped"].get("links", [])
+            ),
+            "images_count": len(
+                st.session_state["scraped"].get("images", [])
+            ),
         }
         st.code(json.dumps(meta_preview, indent=2), language="json")
 
     with st.expander("📝 View Full HTML (optional)", expanded=False):
-        st.text_area("HTML Content", st.session_state["scraped"].get("html", ""), height=300)
-st.markdown('</div>', unsafe_allow_html=True)
+        st.text_area(
+            "HTML Content",
+            st.session_state["scraped"].get("content_html", ""),
+            height=300,
+        )
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # -----------------------------
 # Step 2: Mapping
@@ -130,16 +169,23 @@ if st.button("⚡ Map to Template", use_container_width=True):
         st.error("Please scrape a URL first.")
     else:
         try:
-            mapped = map_content_to_template(st.session_state["scraped"], template)
+            mapped = map_content_to_template(
+                st.session_state["scraped"], template
+            )
             st.session_state["mapped"] = mapped
-            st.success(f"✅ Successfully mapped to **{template}** template!")
+            st.success(
+                f"✅ Successfully mapped to **{template}** template!"
+            )
         except Exception as e:
             st.error(f"❌ Mapping failed: {e}")
 
 if "mapped" in st.session_state:
     with st.expander("🗂️ View Mapped JSON", expanded=True):
-        st.code(json.dumps(st.session_state["mapped"], indent=2), language="json")
-st.markdown('</div>', unsafe_allow_html=True)
+        st.code(
+            json.dumps(st.session_state["mapped"], indent=2), language="json"
+        )
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # -----------------------------
 # Step 3: Export
@@ -154,8 +200,8 @@ if "mapped" in st.session_state:
         data=mapped_json,
         file_name="mapped_content.json",
         mime="application/json",
-        use_container_width=True
+        use_container_width=True,
     )
 else:
     st.info("⚠️ You need to map content before downloading.")
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
