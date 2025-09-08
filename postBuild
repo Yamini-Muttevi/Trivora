@@ -1,6 +1,4 @@
 #!/bin/bash
-# Fail-safe install of Chromium for Playwright
 set -e
-
-echo "Installing Playwright browsers..."
-python -m playwright install chromium || true
+echo "Installing Playwright Chromium..."
+python -m playwright install --with-deps chromium
