@@ -1,9 +1,11 @@
-from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 import requests
 import cloudscraper
 
 
+# ===========================
+# HTML Parser
+# ===========================
 def parse_content(html, url):
     """Parse HTML and extract structured content."""
     soup = BeautifulSoup(html, "lxml")
@@ -15,7 +17,7 @@ def parse_content(html, url):
     desc_tag = soup.find("meta", attrs={"name": "description"})
     description = desc_tag.get("content", "").strip() if desc_tag else ""
 
-    # Main content (prefer <main> or <article>)
+    # Main content
     main_content = soup.find("main") or soup.find("article") or soup.body
     content_html = str(main_content) if main_content else ""
     content_text = (
@@ -43,11 +45,14 @@ def parse_content(html, url):
     }
 
 
+# ===========================
+# Scraper
+# ===========================
 def scrape_url(url: str):
-    """Scrape a URL with stronger Requests → Playwright → Cloudscraper fallback."""
+    """Scrape a URL with Requests → Browserless → Cloudscraper fallback."""
     e1 = e2 = e3 = None
 
-    # 1. Try Requests with stronger headers
+    # 1. Try Requests with strong headers
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
@@ -60,24 +65,26 @@ def scrape_url(url: str):
         resp = requests.get(url, timeout=30, headers=headers)
         resp.raise_for_status()
         return {"method": "requests", **parse_content(resp.text, url)}
-    except Exception as ex2:
-        e2 = ex2
-        print(f"[WARN] Requests failed: {e2}")
-
-    # 2. Try Playwright (if Chromium is available)
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-            html = page.content()
-            browser.close()
-            return {"method": "playwright", **parse_content(html, url)}
     except Exception as ex1:
         e1 = ex1
-        print(f"[WARN] Playwright failed: {e1}")
+        print(f"[WARN] Requests failed: {e1}")
 
-    # 3. Try Cloudscraper
+    # 2. Try Browserless API (requires API key)
+    try:
+        BROWSERLESS_API_KEY = "2T1LWqT1oodNPi237859cb277598c1cd76d50bf1020d710fc"  # 🔑 replace with your real key
+        response = requests.post(
+            f"https://chrome.browserless.io/content?token={BROWSERLESS_API_KEY}",
+            json={"url": url},
+            timeout=60,
+        )
+        response.raise_for_status()
+        html = response.text
+        return {"method": "browserless", **parse_content(html, url)}
+    except Exception as ex2:
+        e2 = ex2
+        print(f"[WARN] Browserless failed: {e2}")
+
+    # 3. Try Cloudscraper as last fallback
     try:
         scraper = cloudscraper.create_scraper(
             browser={"browser": "chrome", "platform": "windows", "mobile": False}
@@ -94,8 +101,8 @@ def scrape_url(url: str):
         "method": "failed",
         "error": "All scraping methods failed",
         "details": {
-            "requests": str(e2),
-            "playwright": str(e1),
+            "requests": str(e1),
+            "browserless": str(e2),
             "cloudscraper": str(e3),
         },
     }
