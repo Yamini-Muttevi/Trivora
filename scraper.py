@@ -55,7 +55,10 @@ def scrape_url(url: str):
     # 1. Try Requests with strong headers
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
+                "Gecko/20100101 Firefox/121.0"
+            ),
             "Accept-Language": "en-US,en;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Referer": "https://www.google.com/",
@@ -69,12 +72,23 @@ def scrape_url(url: str):
         e1 = ex1
         print(f"[WARN] Requests failed: {e1}")
 
-    # 2. Try Browserless API (requires API key)
+    # 2. Try Browserless API with full browser headers + waitUntil
     try:
         BROWSERLESS_API_KEY = "2T1LWqT1oodNPi237859cb277598c1cd76d50bf1020d710fc"  # 🔑 replace with your real key
         response = requests.post(
             f"https://chrome.browserless.io/content?token={BROWSERLESS_API_KEY}",
-            json={"url": url},
+            json={
+                "url": url,
+                "gotoOptions": {"waitUntil": "networkidle2"},
+                "headers": {
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
+                        "Gecko/20100101 Firefox/121.0"
+                    ),
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Referer": "https://www.google.com/",
+                },
+            },
             timeout=60,
         )
         response.raise_for_status()
