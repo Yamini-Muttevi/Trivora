@@ -3,6 +3,7 @@ import json
 import streamlit as st
 from scraper import scrape_url
 from mapper import map_content_to_template
+import os
 
 
 # -----------------------------
@@ -21,11 +22,10 @@ ensure_playwright_browsers()
 
 
 # -----------------------------
-# Page Config
+# Page Config with safe icon fallback
 # -----------------------------
-st.set_page_config(
-    page_title="Trivora", layout="wide", page_icon="trivora logo.png"
-)
+page_icon = "trivora logo.png" if os.path.exists("trivora logo.png") else None
+st.set_page_config(page_title="Trivora", layout="wide", page_icon=page_icon)
 
 
 # -----------------------------
@@ -82,9 +82,13 @@ st.markdown(
 
 
 # -----------------------------
-# Sidebar
+# Sidebar with fallback
 # -----------------------------
-st.sidebar.image("trivora logo.png", width=200)
+if os.path.exists("trivora logo.png"):
+    st.sidebar.image("trivora logo.png", width=200)
+else:
+    st.sidebar.markdown("### ✨ Trivora")  # fallback text if logo missing
+
 st.sidebar.title("✨ Trivora")
 st.sidebar.markdown(
     "**Scrape → Map → Download** your content into ready-to-use JSON."
@@ -146,6 +150,9 @@ if "scraped" in st.session_state:
                 st.session_state["scraped"].get("images", [])
             ),
         }
+        if "details" in st.session_state["scraped"]:
+            meta_preview["details"] = st.session_state["scraped"]["details"]
+
         st.code(json.dumps(meta_preview, indent=2), language="json")
 
     with st.expander("📝 View Full HTML (optional)", expanded=False):
