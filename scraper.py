@@ -44,10 +44,27 @@ def parse_content(html, url):
 
 
 def scrape_url(url: str):
-    """Scrape a URL with Playwright → Requests → Cloudscraper fallback, with detailed errors."""
-    e1 = e2 = e3 = None  # init error placeholders
+    """Scrape a URL with stronger Requests → Playwright → Cloudscraper fallback."""
+    e1 = e2 = e3 = None
 
-    # 1. Try Playwright
+    # 1. Try Requests with stronger headers
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Referer": "https://www.google.com/",
+            "DNT": "1",
+            "Upgrade-Insecure-Requests": "1",
+        }
+        resp = requests.get(url, timeout=30, headers=headers)
+        resp.raise_for_status()
+        return {"method": "requests", **parse_content(resp.text, url)}
+    except Exception as ex2:
+        e2 = ex2
+        print(f"[WARN] Requests failed: {e2}")
+
+    # 2. Try Playwright (if Chromium is available)
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -59,17 +76,6 @@ def scrape_url(url: str):
     except Exception as ex1:
         e1 = ex1
         print(f"[WARN] Playwright failed: {e1}")
-
-    # 2. Try Requests
-    try:
-        resp = requests.get(
-            url, timeout=30, headers={"User-Agent": "Mozilla/5.0"}
-        )
-        resp.raise_for_status()
-        return {"method": "requests", **parse_content(resp.text, url)}
-    except Exception as ex2:
-        e2 = ex2
-        print(f"[WARN] Requests failed: {e2}")
 
     # 3. Try Cloudscraper
     try:
@@ -88,8 +94,8 @@ def scrape_url(url: str):
         "method": "failed",
         "error": "All scraping methods failed",
         "details": {
-            "playwright": str(e1),
             "requests": str(e2),
+            "playwright": str(e1),
             "cloudscraper": str(e3),
         },
     }
